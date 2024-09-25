@@ -3,17 +3,22 @@ package com.ismailmesutmujde.kotlinmoviesappfirebaserealtimedatabase.view
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.ismailmesutmujde.kotlinmoviesappfirebaserealtimedatabase.R
 import com.ismailmesutmujde.kotlinmoviesappfirebaserealtimedatabase.adapter.CategoriesRecyclerViewAdapter
 import com.ismailmesutmujde.kotlinmoviesappfirebaserealtimedatabase.databinding.ActivityMainScreenBinding
 import com.ismailmesutmujde.kotlinmoviesappfirebaserealtimedatabase.model.Categories
-
 
 class MainScreenActivity : AppCompatActivity() {
     private lateinit var bindingMainScreen : ActivityMainScreenBinding
 
     private lateinit var categoryList:ArrayList<Categories>
     private lateinit var adapterCategory: CategoriesRecyclerViewAdapter
+    private lateinit var refCategories:DatabaseReference
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,8 +32,12 @@ class MainScreenActivity : AppCompatActivity() {
         bindingMainScreen.recyclerViewCategory.setHasFixedSize(true)
         bindingMainScreen.recyclerViewCategory.layoutManager = LinearLayoutManager(this)
 
+        val db = FirebaseDatabase.getInstance()
+        refCategories = db.getReference("categories")
+
         categoryList = ArrayList()
 
+        /*
         val c1 = Categories(1,"Science Fiction")
         val c2 = Categories(2,"Drama")
         val c3 = Categories(3,"Action")
@@ -49,10 +58,31 @@ class MainScreenActivity : AppCompatActivity() {
         categoryList.add(c7)
         categoryList.add(c8)
         categoryList.add(c9)
-        categoryList.add(c10)
+        categoryList.add(c10)*/
 
         adapterCategory = CategoriesRecyclerViewAdapter(this, categoryList)
         bindingMainScreen.recyclerViewCategory.adapter = adapterCategory
 
+        allCategories()
+    }
+
+    fun allCategories(){
+        refCategories.addValueEventListener(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                categoryList.clear()
+                for (c in snapshot.children) {
+                    val category = c.getValue(Categories::class.java)
+                    if (category != null) {
+                        category.category_id = c.key
+                        categoryList.add(category)
+                    }
+                }
+                adapterCategory.notifyDataSetChanged()
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+
+            }
+        })
     }
 }

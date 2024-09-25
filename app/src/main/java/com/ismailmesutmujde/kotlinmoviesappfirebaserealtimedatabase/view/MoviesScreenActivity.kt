@@ -3,6 +3,11 @@ package com.ismailmesutmujde.kotlinmoviesappfirebaserealtimedatabase.view
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 import com.ismailmesutmujde.kotlinmoviesappfirebaserealtimedatabase.R
 import com.ismailmesutmujde.kotlinmoviesappfirebaserealtimedatabase.adapter.MoviesRecyclerViewAdapter
@@ -16,6 +21,7 @@ class MoviesScreenActivity : AppCompatActivity() {
 
     private lateinit var moviesList:ArrayList<Movies>
     private lateinit var adapterMovies: MoviesRecyclerViewAdapter
+    private lateinit var refMovies: DatabaseReference
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,8 +37,12 @@ class MoviesScreenActivity : AppCompatActivity() {
         bindingMoviesScreen.recyclerViewMovies.setHasFixedSize(true)
         bindingMoviesScreen.recyclerViewMovies.layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
 
+        val db = FirebaseDatabase.getInstance()
+        refMovies = db.getReference("movies")
+
         moviesList = ArrayList()
 
+        /*
         val c1 = Categories(1,"Science Fiction")
         val c2 = Categories(2,"Drama")
         val c3 = Categories(3,"Action")
@@ -50,10 +60,32 @@ class MoviesScreenActivity : AppCompatActivity() {
         moviesList.add(m2)
         moviesList.add(m3)
         moviesList.add(m4)
+        */
 
         adapterMovies = MoviesRecyclerViewAdapter(this, moviesList)
         bindingMoviesScreen.recyclerViewMovies.adapter = adapterMovies
 
+        allMoviesByCategoryId(category.category_name)
+    }
 
+    fun allMoviesByCategoryId(category_name:String?){
+        val query = refMovies.orderByChild("category_name").equalTo(category_name)
+        query.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                moviesList.clear()
+                for (m in snapshot.children) {
+                    val movie = m.getValue(Movies::class.java)
+                    if (movie != null) {
+                        movie.movie_id = m.key
+                        moviesList.add(movie)
+                    }
+                }
+                adapterMovies.notifyDataSetChanged()
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+
+            }
+        })
     }
 }
